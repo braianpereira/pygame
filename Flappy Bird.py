@@ -49,7 +49,14 @@ def main():  # Função onde o jogo inteiro irá rodar
         for event in pygame.event.get():  # Pega os eventos que ocorrem no jogo
             if event.type == pygame.QUIT:  # Evento para quando o jogador apertar no "X" de nossa tela: sair do jogo
                 loop = False
-                pygame.quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    print("Cima apertado")
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print("Mouse pressionado")
+    pygame.quit()
 
 
 main()  # Executa o jogo
