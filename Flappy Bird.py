@@ -1,7 +1,6 @@
 # Importando e inicializando o PyGame
-import random
-
 import pygame
+import random
 
 pygame.init()
 
@@ -18,6 +17,9 @@ texto = fonte.render("0", True, [0, 255, 0])
 fundo = pygame.image.load("./Fundos/Fundo1.png")
 fundo = pygame.transform.scale(fundo, (400, 600))
 
+loop = True
+pontuacao = 0
+
 # Criando classe de pássaro
 class Passaro:
     x = 170
@@ -33,6 +35,7 @@ class Passaro:
     imagem = pygame.transform.scale(imagem, (largura, altura))
 
     def Atualizar(self, tela):
+        self.rect = pygame.Rect(self.x, self.y, self.largura, self.altura)
         self.Desenhar(tela)
         self.Cair()
 
@@ -48,44 +51,6 @@ class Passaro:
         self.velocidade = 0
 
 
-class Cano:
-    largura = 100
-    altura = 1550
-    velocidade = 4
-    baixo_y = 0
-    cima_y = 0
-
-    cano_baixo = pygame.image.load("./Objetos/Canos/Cano1/baixo.png")
-    cano_baixo = pygame.transform.scale(cano_baixo, (largura, altura))
-
-    cano_cima = pygame.image.load("./Objetos/Canos/Cano1/cima.png")
-    cano_cima = pygame.transform.scale(cano_cima, (largura, altura))
-
-    def __init__(self, x):
-        self.x = x
-        self.Reiniciar()
-
-    def Reiniciar(self):
-        y = random.randrange(190, 460)
-        self.baixo_y = y
-        self.cima_y = self.baixo_y - self.altura - 140
-
-    def Desenhar(self, tela):
-        tela.blit(self.cano_baixo, [self.x, self.baixo_y])
-        tela.blit(self.cano_cima, [self.x, self.cima_y])
-
-    def Mover(self):
-        self.x -= self.velocidade
-
-        if self.x < -self.largura:
-            self.x = 450
-            self.Reiniciar()
-
-    def Atualizar(self, tela):
-        self.Desenhar(tela)
-        self.Mover()
-
-
 class Chao:
     x = 0
     y = 510
@@ -95,29 +60,107 @@ class Chao:
     imagem = pygame.image.load("./Objetos/Choes/Chao1.png")
     imagem = pygame.transform.scale(imagem, (largura, altura))
 
-    def Atualizar(self, tela):
+    def Atualizar(self, tela, passaro):
+        self.rect = pygame.Rect(self.x, self.y, self.largura, self.altura)
+        self.Colidir(passaro)
         self.Desenhar(tela)
+
+    def Colidir(self, passaro):
+        global loop
+
+        if self.rect.colliderect(passaro):
+            loop = False
 
     def Desenhar(self, tela):
         tela.blit(self.imagem, [self.x, self.y])  # Desenha o chão
 
 
+class Cano:
+
+    def __init__(self, x):
+        self.rect_entre_canos = None
+        self.rect = None
+        self.y_baixo = None
+        self.y_cima = None
+        self.ponto = None
+        self.x = x
+
+        self.largura = 100
+        self.altura = 1550
+
+        self.velocidade = 5
+
+        self.imagem_cima = pygame.image.load("./Objetos/Canos/Cano1/cima.png")
+        self.imagem_cima = pygame.transform.scale(self.imagem_cima, (100, 1550))
+
+        self.imagem_baixo = pygame.image.load("./Objetos/Canos/Cano1/baixo.png")
+        self.imagem_baixo = pygame.transform.scale(self.imagem_baixo, (100, 1550))
+
+        self.Reiniciar()
+
+    def Reiniciar(self):
+        y = random.randrange(190, 460)
+        self.y_baixo = y
+        self.y_cima = y - self.altura - 140
+        self.ponto = 1
+
+    def Atualizar(self, tela, passaro):
+        self.rect_baixo = pygame.Rect(self.x, self.y_baixo, self.largura, self.altura)
+        self.rect_cima = pygame.Rect(self.x, self.y_cima, self.largura, self.altura)
+        self.rect_entre_canos = pygame.Rect(self.x, self.y_baixo -
+                                            (self.y_cima + self.altura), self.largura, self.altura)
+        self.Colidir(passaro)
+        self.Desenhar(tela)
+        self.Mover()
+
+    def Colidir(self, passaro):
+        global loop
+        global pontuacao
+        global texto
+
+        if self.rect_baixo.colliderect(passaro):
+            loop = False
+
+        if self.rect_cima.colliderect(passaro):
+            loop = False
+
+        if self.rect_entre_canos.colliderect(passaro):
+            if self.ponto > 0:
+                pontuacao += self.ponto
+                self.ponto = 0
+                texto = fonte.render(str(pontuacao), True, [0, 255, 0])
+
+
+    def Desenhar(self, tela):
+        tela.blit(self.imagem_baixo, [self.x, self.y_baixo])  # Desenha o cano de cima
+        tela.blit(self.imagem_cima, [self.x, self.y_cima])  # Desenha o cano de cima
+
+    def Mover(self):
+        self.x -= self.velocidade
+
+        if self.x + self.largura <= 0:
+            self.x = 450
+            self.Reiniciar()
+
+
+cano1 = Cano(450)
+cano2 = Cano(735)
+
+
 def main():  # Função onde o jogo inteiro irá rodar
+    global loop
+    global texto
     relogio = pygame.time.Clock()
-    loop = True
 
     passaro = Passaro()
     chao = Chao()
-    cano_1 = Cano(430)
-    cano_2 = Cano(735)
 
     while loop:  # Criar um loop infinito
-
         tela.blit(fundo, [0, -85])  # Desenha o fundo
         passaro.Atualizar(tela)
-        cano_1.Atualizar(tela)
-        cano_2.Atualizar(tela)
-        chao.Atualizar(tela)
+        cano1.Atualizar(tela, passaro.rect)
+        cano2.Atualizar(tela, passaro.rect)
+        chao.Atualizar(tela, passaro.rect)
         tela.blit(texto, [200, 0])  # Desenha o texto
         relogio.tick(30)
         pygame.display.update()  # Atualiza a tela
